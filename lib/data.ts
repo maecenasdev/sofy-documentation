@@ -101,6 +101,17 @@ export const sectionContent: Record<SectionId, { hero: string; summary: string; 
         description:
           "Buffering, pre-roll e analisi visemi dinamica migliorano la sincronia; osservabilità potenziata con metriche e dashboard dedicate.",
         highlights: ["Buffer TTS tra `chat.done` e playback", "Lip-sync locale migliorato", "Dashboard Grafana specifiche"]
+      },
+      {
+        title: "Integrazione e ampliamento multilingua",
+        description:
+          "Estendere la pipeline di AI e TTS per supportare in modo nativo più lingue, consentendo interazioni in inglese, spagnolo, cinese e russo con voce e sincronizzazione labiale coerenti.",
+        highlights: [
+          "Supporto Gemini multilingua",
+          "Selezione lingua automatica o da menu kiosk",
+          "TTS multilingua con visemi adattivi",
+          "Internazionalizzazione UI (i18n)"
+        ]
       }
     ]
   }
