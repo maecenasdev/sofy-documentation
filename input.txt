@@ -1,0 +1,63 @@
+Sofy Gallery — Documentazione e Progettazione
+Questo documento riassume la **progettazione tecnica, architettura software e flussi operativi** del
+totem interattivo *Sofy Gallery*, un sistema di intelligenza artificiale conversazionale dotato di
+avatar 3D e voce naturale. Il totem consente all’utente di parlare con un assistente digitale che
+risponde in tempo reale utilizzando Google TTS e modelli linguistici Gemini AI.
+Architettura Generale L’infrastruttura di Sofy Gallery è composta da più moduli integrati: -
+**Frontend (Next.js + React Three Fiber)**: gestisce l’interfaccia kiosk, l’animazione dell’avatar 3D
+e la sincronizzazione labiale in base ai visemi TTS. - **Backend (Fastify Node.js)**: funge da
+gateway locale per la comunicazione WebSocket e REST con il modello Gemini AI e Google TTS. -
+**Gemini AI (via API)**: gestisce la comprensione del linguaggio naturale e la generazione di
+risposte testuali in streaming, con latenza ridotta. - **Google Text-to-Speech**: converte le risposte
+in audio naturale, sincronizzate con il movimento della bocca dell’avatar. - **Cache Audio**:
+meccanismo on-disk per riutilizzare MP3 già generati e ridurre la latenza percepita. Ogni
+componente è containerizzato e orchestrato tramite Docker, con unità systemd dedicate per
+ambienti bare-metal.
+Flusso Operativo End-to-End 1. L’utente parla o digita un messaggio. Il frontend lo invia via
+WebSocket al backend.
+2. Il backend inoltra la richiesta a Gemini AI, che produce token in streaming.
+3. Ogni token (`chat.delta`) è inviato in tempo reale al frontend per aggiornare il testo e l’animazione
+labiale.
+4. Quando la risposta è completa (`chat.done`), il backend invoca Google TTS e genera l’audio
+corrispondente.
+5. Il file MP3 e la timeline dei visemi sono inviati al frontend per la riproduzione e sincronizzazione
+con l’avatar.
+6. Il ciclo si ripete, mantenendo una conversazione fluida e naturale.
+Componenti Principali - **Fastify Gateway**: gestisce la logica delle sessioni, la coda dei messaggi
+e lo streaming WS con eventi standardizzati.
+- **Servizi Backend**:
+- `gemini.ts`: implementa la chiamata e lo streaming ai modelli Gemini con retry e fallback
+automatici.
+- `tts.ts`: converte il testo in voce con Google TTS e produce i timepoint SSML.
+- `timeline.ts`: traduce il parlato in keyframe ARKit per la bocca dell’avatar.
+- **Frontend Avatar**:
+- Scene R3F (`SofyAvatarScene.tsx` e `RpmAvatar.tsx`) gestiscono le animazioni 3D e i morph
+target.
+- Librerie di lip-sync come `wawa-lipsync` migliorano la sincronia visiva.
+Configurazione e Deploy Tutti i parametri chiave sono definiti nei file `.env` del frontend e backend.
+**Variabili principali:**
+- `GEMINI_API_KEY`, `GEMINI_MODEL` e `GEMINI_MODEL_FALLBACKS`
+- `GOOGLE_APPLICATION_CREDENTIALS`, `TTS_LANG`, `TTS_VOICE`
+- `TTS_CACHE_DIR`, `NEXT_PUBLIC_WS_URL`, `NEXT_PUBLIC_API_BASE`
+**Modalità di Deploy:**
+- **Docker Compose**: esegue frontend e backend in container coordinati.
+- **Bare Metal**: tramite systemd unit per esecuzione automatica del kiosk.
+- **Ops**: monitoraggio health check, log dei servizi e rotazione cache.
+Migliorie e Prossimi Step 1. **Integrazione con n8n**
+n8n permetterà di delegare compiti asincroni e non interattivi (log, cache, analisi, pre-warm) a un
+flusso di automazione esterno.
+Ridurrà il carico del gateway, migliorando la stabilità e la prevedibilità del sistema in caso di picchi
+di traffico.
+2. **Interazione vocale completa (Speech-to-Text)**
+L’obiettivo è abilitare l’input vocale diretto tramite microfono integrato nel totem.
+Verranno utilizzati servizi **Speech-to-Text (STT)** di Google o OpenAI Whisper per trascrivere in
+tempo reale la voce dell’utente.
+Ciò consentirà una conversazione naturale “voce a voce”, con possibilità di barge■in (interruzione
+della risposta in corso).
+3. **Ottimizzazione pipeline audio**
+Implementare buffering e pre■roll per ridurre il tempo tra `chat.done` e la riproduzione TTS.
+Migliorare la qualità del lip■sync tramite analisi visemi dinamica e AI locale.
+4. **Osservabilità e Manutenzione**
+Aggiungere metriche Prometheus e dashboard Grafana per misurare latenza, TTFB e qualità del
+servizio.
+Creare test automatici e scenari di regressione per verificare aggiornamenti dei modelli o librerie.
